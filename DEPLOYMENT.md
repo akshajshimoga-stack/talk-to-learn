@@ -85,46 +85,104 @@ AWS_REGION=us-east-1
 
 ## 🗄️ Database Setup
 
-### MongoDB Atlas (Recommended for Production)
+### MongoDB Atlas Free Tier ⭐ (Recommended - NO COST)
 
-1. **Create Cluster**
-   - Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-   - Create a new cluster
-   - Wait for cluster to provision
+**512MB free storage - Perfect for development & MVP!**
+**NO credit card required!**
 
-2. **Create Database User**
-   - Database Access → Add New Database User
-   - Username & password (save securely)
+1. **Create Account**
+   - Go to [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+   - Click "Create a free account"
+   - Verify email
+
+2. **Create Organization & Project**
+   - Create organization (any name)
+   - Create project (e.g., "talk-to-learn")
+
+3. **Build Database**
+   - Click "Build a Database"
+   - Select **M0 (Free)** tier
+   - Choose your region (closest to you)
+   - Click "Create Cluster" → Wait 3-5 minutes
+
+4. **Create Database User**
+   - Security → Database Access
+   - Click "Add New Database User"
+   - Username: `admin` (or your choice)
+   - Password: Generate secure password
    - Built-in Role: `readWriteAnyDatabase`
+   - Click "Add User"
 
-3. **Get Connection String**
-   - Clusters → Connect → Driver
+5. **Allow Network Access**
+   - Security → Network Access
+   - Click "Add IP Address"
+   - For development: `0.0.0.0/0` (Allow from anywhere)
+   - For production: Add your server IP only
+
+6. **Get Connection String**
+   - Clusters → Click "Connect"
+   - Select "Drivers"
    - Copy connection string
-   - Replace `<password>` and `<username>`
+   - Replace `<username>` and `<password>` with your credentials
+   - Replace `<myFirstDatabase>` with `talk-to-learn`
 
-4. **Whitelist IP**
-   - Network Access → Add IP Address
-   - For production: add your server's IP
-   - For development: `0.0.0.0/0` (less secure)
-
-### Local MongoDB
-
-```bash
-# macOS with Homebrew
-brew tap mongodb/brew
-brew install mongodb-community
-brew services start mongodb-community
-
-# Linux
-sudo apt-get install mongodb
-
-# Start service
-mongo
+7. **Add to .env.local**
+```env
+MONGODB_URI=mongodb+srv://admin:password@cluster.mongodb.net/talk-to-learn
 ```
 
-Connection string:
+✅ **Done! You now have a free cloud database.**
+
+### Local MongoDB (Alternative - Free & Unlimited)
+
+**Perfect for development - runs on your computer**
+
+#### macOS
+```bash
+# Install with Homebrew
+brew tap mongodb/brew
+brew install mongodb-community
+
+# Start MongoDB
+brew services start mongodb-community
+
+# Verify it's running
+mongosh
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Install
+sudo apt-get install -y mongodb
+
+# Start service
+sudo systemctl start mongod
+sudo systemctl enable mongod
+
+# Verify
+mongosh
+```
+
+#### Windows
+1. Download from [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community)
+2. Run the installer
+3. Choose "Install MongoDB as a Service"
+4. MongoDB starts automatically
+
+#### Connection String
 ```env
 MONGODB_URI=mongodb://localhost:27017/talk-to-learn
+```
+
+#### View Data (Optional)
+```bash
+# Install MongoDB Compass (GUI)
+brew install mongodb-compass
+
+# Or use mongosh CLI
+mongosh
+> use talk-to-learn
+> db.collection.find()
 ```
 
 ---
