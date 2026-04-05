@@ -19,16 +19,37 @@ export default function Login() {
     }
   }, []);
 
+  const validateForm = (): boolean => {
+    if (!email.trim()) {
+      setError("Email is required");
+      return false;
+    }
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+    if (!password) {
+      setError("Password is required");
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       if (response.ok) {
@@ -40,8 +61,8 @@ export default function Login() {
 
         // Update login history
         const updatedHistory = [
-          email,
-          ...loginHistory.filter((e) => e !== email),
+          email.trim(),
+          ...loginHistory.filter((e) => e !== email.trim()),
         ].slice(0, 5);
         localStorage.setItem("loginHistory", JSON.stringify(updatedHistory));
 
@@ -51,7 +72,7 @@ export default function Login() {
         setError(errorData.message || "Invalid email or password");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError("Network error. Please check your connection and try again.");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -86,7 +107,7 @@ export default function Login() {
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-background border-border text-foreground"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary"
                 required
               />
             </div>
@@ -100,7 +121,7 @@ export default function Login() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-background border-border text-foreground"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary"
                 required
               />
             </div>
@@ -113,8 +134,8 @@ export default function Login() {
 
             <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-primary text-foreground hover:bg-primary/90 font-semibold py-6 rounded-xl"
+              disabled={isLoading || !email.trim() || !password}
+              className="w-full bg-primary text-foreground hover:bg-primary/90 font-semibold py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>

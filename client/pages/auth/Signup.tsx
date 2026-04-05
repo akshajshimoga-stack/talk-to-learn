@@ -22,17 +22,47 @@ export default function Signup() {
     }));
   };
 
+  const validateForm = (): boolean => {
+    if (!formData.name.trim()) {
+      setError("Name is required");
+      return false;
+    }
+    if (formData.name.trim().length < 2) {
+      setError("Name must be at least 2 characters long");
+      return false;
+    }
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      return false;
+    }
+    if (!formData.email.includes("@")) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+    if (!formData.password) {
+      setError("Password is required");
+      return false;
+    }
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return false;
+    }
+    if (!formData.confirmPassword) {
+      setError("Please confirm your password");
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+    return true;
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+    if (!validateForm()) {
       return;
     }
 
@@ -43,8 +73,8 @@ export default function Signup() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
+          name: formData.name.trim(),
+          email: formData.email.trim(),
           password: formData.password,
         }),
       });
@@ -60,7 +90,7 @@ export default function Signup() {
         const history = localStorage.getItem("loginHistory");
         const loginHistory = history ? JSON.parse(history) : [];
         const updatedHistory = [
-          formData.email,
+          formData.email.trim(),
           ...loginHistory,
         ].slice(0, 5);
         localStorage.setItem("loginHistory", JSON.stringify(updatedHistory));
@@ -68,10 +98,10 @@ export default function Signup() {
         navigate("/dashboard");
       } else {
         const errorData = await response.json();
-        setError(errorData.message || "An error occurred");
+        setError(errorData.message || "An error occurred during signup");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError("Network error. Please check your connection and try again.");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -105,7 +135,7 @@ export default function Signup() {
                 placeholder="John Doe"
                 value={formData.name}
                 onChange={handleChange}
-                className="bg-background border-border text-foreground"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary"
                 required
               />
             </div>
@@ -120,7 +150,7 @@ export default function Signup() {
                 placeholder="your@email.com"
                 value={formData.email}
                 onChange={handleChange}
-                className="bg-background border-border text-foreground"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary"
                 required
               />
             </div>
@@ -135,10 +165,10 @@ export default function Signup() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                className="bg-background border-border text-foreground"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary"
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 At least 8 characters
               </p>
             </div>
@@ -153,9 +183,21 @@ export default function Signup() {
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="bg-background border-border text-foreground"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary"
                 required
               />
+              {formData.confirmPassword && formData.password && (
+                <div className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium ${
+                  formData.password === formData.confirmPassword
+                    ? "bg-green-500/10 text-green-400"
+                    : "bg-destructive/10 text-destructive"
+                }`}>
+                  {formData.password === formData.confirmPassword ? "✓" : "✗"}
+                  <span>{formData.password === formData.confirmPassword
+                    ? "Passwords match"
+                    : "Passwords do not match"}</span>
+                </div>
+              )}
             </div>
 
             {error && (
@@ -166,8 +208,8 @@ export default function Signup() {
 
             <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-primary text-foreground hover:bg-primary/90 font-semibold py-6 rounded-xl"
+              disabled={isLoading || !formData.name.trim() || !formData.email.trim() || !formData.password || !formData.confirmPassword}
+              className="w-full bg-primary text-foreground hover:bg-primary/90 font-semibold py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>

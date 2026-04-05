@@ -53,11 +53,13 @@ export default function Learning() {
     null
   );
   const [selectedText, setSelectedText] = useState("");
+  const [question, setQuestion] = useState("");
   const [showTextSelector, setShowTextSelector] = useState(false);
   const [explanation, setExplanation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [voiceGender, setVoiceGender] = useState<"male" | "female">("male");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!localStorage.getItem("token")) {
@@ -69,6 +71,8 @@ export default function Learning() {
     setSelectedMode(mode);
     setExplanation("");
     setSelectedText("");
+    setQuestion("");
+    setError("");
 
     if (mode !== "doubt") {
       setShowTextSelector(true);
@@ -77,11 +81,12 @@ export default function Learning() {
 
   const handleGetExplanation = async () => {
     if (!selectedText) {
-      alert("Please select text first");
+      setError("Please select text first");
       return;
     }
 
     setIsLoading(true);
+    setError("");
 
     try {
       const token = localStorage.getItem("token");
@@ -108,11 +113,51 @@ export default function Learning() {
           playAudio(data.audioUrl);
         }
       } else {
-        alert("Error getting explanation");
+        const errorData = await response.json();
+        setError(errorData.message || "Error getting explanation");
       }
     } catch (err) {
       console.error("Error getting explanation:", err);
-      alert("Error getting explanation");
+      setError("Failed to get explanation. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAskDoubt = async () => {
+    if (!question) {
+      setError("Please enter a question first");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/doubts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          pdfId,
+          question,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExplanation(data.answer);
+        setQuestion("");
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Error asking question");
+      }
+    } catch (err) {
+      console.error("Error asking doubt:", err);
+      setError("Failed to ask question. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -164,15 +209,15 @@ export default function Learning() {
               <button
                 key={mode.mode}
                 onClick={() => handleSelectMode(mode.mode)}
-                className="group bg-card hover:bg-card/80 border border-border hover:border-primary/50 rounded-2xl p-8 text-left transition-all duration-300 transform hover:scale-105"
+                className="group bg-card/50 hover:bg-card border border-border hover:border-primary/50 rounded-2xl p-8 text-left transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-primary/10 focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <div className="text-4xl mb-4">{mode.icon}</div>
-                <h3 className="text-xl font-bold text-foreground mb-2">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">{mode.icon}</div>
+                <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
                   {mode.title}
                 </h3>
-                <p className="text-muted-foreground">{mode.description}</p>
-                <div className="mt-4 inline-block">
-                  <Button className="bg-primary text-foreground hover:bg-primary/90">
+                <p className="text-muted-foreground group-hover:text-foreground/70 transition-colors">{mode.description}</p>
+                <div className="mt-6 inline-block">
+                  <Button className="bg-primary text-foreground hover:bg-primary/90 group-hover:shadow-lg group-hover:shadow-primary/20">
                     Start
                   </Button>
                 </div>
@@ -209,8 +254,15 @@ export default function Learning() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {/* Text Selector */}
-            {showTextSelector && (
+            {/* Error Display */}
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-4 mb-6">
+                {error}
+              </div>
+            )}
+
+            {/* Text Selector for Explanation Modes */}
+            {showTextSelector && selectedMode !== "doubt" && (
               <div className="bg-card rounded-2xl border border-border p-8 mb-8">
                 <h2 className="text-xl font-bold text-foreground mb-4">
                   Select Text to Explain
@@ -219,10 +271,28 @@ export default function Learning() {
                   value={selectedText}
                   onChange={(e) => setSelectedText(e.target.value)}
                   placeholder="Paste or type the text you want to learn about..."
-                  className="w-full h-40 bg-background border border-border text-foreground rounded-lg p-4 focus:ring-2 focus:ring-primary focus:outline-none"
+                  className="w-full h-40 bg-background border border-border text-foreground rounded-lg p-4 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground/50 transition-all duration-200 hover:border-border/50"
                 />
                 <p className="text-sm text-muted-foreground mt-2">
                   {selectedText.length} characters
+                </p>
+              </div>
+            )}
+
+            {/* Question Input for Doubt Mode */}
+            {selectedMode === "doubt" && (
+              <div className="bg-card rounded-2xl border border-border p-8 mb-8">
+                <h2 className="text-xl font-bold text-foreground mb-4">
+                  Ask Your Question
+                </h2>
+                <textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Type your question about the content..."
+                  className="w-full h-40 bg-background border border-border text-foreground rounded-lg p-4 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-muted-foreground/50 transition-all duration-200 hover:border-border/50"
+                />
+                <p className="text-sm text-muted-foreground mt-2">
+                  {question.length} characters
                 </p>
               </div>
             )}
@@ -258,11 +328,11 @@ export default function Learning() {
               </div>
             )}
 
-            {/* Explanation Display */}
+            {/* Explanation/Answer Display */}
             {explanation && (
               <div className="bg-card rounded-2xl border border-border p-8 mb-8">
                 <h3 className="text-lg font-semibold text-foreground mb-4">
-                  Explanation
+                  {selectedMode === "doubt" ? "Answer" : "Explanation"}
                 </h3>
                 <div className="prose prose-invert max-w-none">
                   <p className="text-foreground leading-relaxed whitespace-pre-wrap">
@@ -273,12 +343,16 @@ export default function Learning() {
                 {/* Controls */}
                 <div className="flex gap-3 mt-6">
                   <Button
-                    onClick={() => setExplanation("")}
+                    onClick={() => {
+                      setExplanation("");
+                      setSelectedText("");
+                      setQuestion("");
+                    }}
                     variant="outline"
                     className="border-border text-foreground hover:bg-card"
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
-                    New Question
+                    {selectedMode === "doubt" ? "Ask Another" : "New Question"}
                   </Button>
                   {selectedMode === "voice" && (
                     <Button
@@ -304,22 +378,22 @@ export default function Learning() {
               </div>
             )}
 
-            {/* Get Explanation Button */}
+            {/* Get Explanation/Answer Button */}
             {!explanation && (
               <Button
-                onClick={handleGetExplanation}
-                disabled={isLoading || !selectedText}
+                onClick={selectedMode === "doubt" ? handleAskDoubt : handleGetExplanation}
+                disabled={isLoading || (selectedMode === "doubt" ? !question : !selectedText)}
                 className="w-full bg-primary text-foreground hover:bg-primary/90 py-6 text-lg font-semibold rounded-xl"
               >
                 {isLoading ? (
                   <>
                     <Zap className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Explanation...
+                    {selectedMode === "doubt" ? "Getting Answer..." : "Generating Explanation..."}
                   </>
                 ) : (
                   <>
                     <Zap className="w-5 h-5 mr-2" />
-                    Get Explanation
+                    {selectedMode === "doubt" ? "Ask Question" : "Get Explanation"}
                   </>
                 )}
               </Button>
@@ -353,7 +427,18 @@ export default function Learning() {
                   </div>
                 </div>
 
-                {selectedText && (
+                {selectedMode === "doubt" && question && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Your Question
+                    </p>
+                    <p className="text-sm text-foreground line-clamp-3">
+                      {question}
+                    </p>
+                  </div>
+                )}
+
+                {selectedMode !== "doubt" && selectedText && (
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
                       Text Selected
